@@ -10,9 +10,7 @@ int Segtree_update(int* seg_tree, int start, int end, int i, int d_value, int cu
 
 int main()
 {
-	int *list = 0;
-	list = Seg_tree_const(list, 15);
-	printf("%d", Get_query(list, 15, 0, 14));
+	
 }
 
 int* Seg_tree_const(int* list, int n)
@@ -23,7 +21,7 @@ int* Seg_tree_const(int* list, int n)
 	Construct_tree(list, 0, n - 1, seg_tree, 0);
 	return seg_tree;
 }
-int Construct_tree(int* list, int start, int end, int* seg_tree, int current)
+int Construct_tree(int* list, int start, int end, int* seg_tree, int current) //init
 {
 	if (start == end)
 	{
@@ -33,6 +31,7 @@ int Construct_tree(int* list, int start, int end, int* seg_tree, int current)
 	int mid = start + (end - start) / 2;
 	int child = 2 * current;
 	seg_tree[current] = Construct_tree(list, start, mid, seg_tree, child + 1) + Construct_tree((int*)list, mid + 1, end, seg_tree, child + 2);
+	
 	return seg_tree[current];
 }
 int Get_query(int* seg_tree, int n, int q_s, int q_e)
