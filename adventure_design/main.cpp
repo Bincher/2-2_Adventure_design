@@ -1,23 +1,40 @@
 #include <iostream>
 #include <vector>
-
 using namespace std;
-int arr[] = { 21, 7, 8 ,19, 2, 9, 6, 10 };
-vector<int> seg_tree(32);
 
+int Seg_tree_const(int n);
+
+int arr[] = { 21, 7, 8 ,19, 2, 9, 6, 10 };
+int arr_size = size(arr);
+int seg_size = Seg_tree_const(arr_size);
+
+vector<int> seg_tree;
+
+int Seg_tree_const(int n);
 int Construct_tree(int start, int end, int current);
 int Get_query(int n, int q_s, int q_e);
 int Query_sum(int start, int end, int q_s, int q_e, int current);
 void Segtree_update(int start, int end, int i, int d_value, int current);
-void Display(int n);
+void Display(int n); 
 
 int main()
 {
-	Construct_tree(0, 7, 0);
-	Display(32);
-	printf("%d", Get_query(8, 1, 7));
+	seg_tree.resize(Seg_tree_const(arr_size), 0);
+	Construct_tree(0, arr_size - 1, 0);
+	Display(seg_size);
 
+	printf("3부터 5까지의 합 (19 + 2 + 9) : %d\n", Get_query(arr_size, 3, 5));
+	int temp = 10 - arr[3];
+	arr[3] = 10;
+	Segtree_update(0, arr_size - 1, 3, temp, 0);
+	Display(seg_size);
 	system("pause");
+}
+int Seg_tree_const(int n)
+{
+	int height = (int)ceil(log2(n));
+	int t_size = 2 * pow(2, height + 1) - 1;
+	return t_size;
 }
 int Construct_tree(int start, int end, int current) //init
 {
