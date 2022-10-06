@@ -1,90 +1,270 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
-#include <vector>
+#include <time.h>
 using namespace std;
 
-int Seg_tree_const(int n);
+// 참고 : https://velog.io/@stellakim1012/%EA%B0%84%EB%8B%A8%ED%95%9C-%EB%A9%94%EB%AA%A8%EB%A6%AC-%EA%B4%80%EB%A6%AC%EC%9E%90
 
-int arr[] = { 21, 7, 8 ,19, 2, 9, 6, 10 };
-int arr_size = size(arr);
-int seg_size = Seg_tree_const(arr_size);
+typedef struct chunk {
+	int start; // 메모리 덩어리의 시작 주소
+	int size;  // 메모리 덩어리의 크기
+	struct chunk* link; // 다음 빈 공간에 대한 링크
+}Chunk;
 
-vector<int> seg_tree;
+Chunk* head; // 연결리스트의 헤더 포인터
 
-int Seg_tree_const(int n);
-int Construct_tree(int start, int end, int current);
-int Get_query(int n, int q_s, int q_e);
-int Query_sum(int start, int end, int q_s, int q_e, int current);
-void Segtree_update(int start, int end, int i, int d_value, int current);
-void Display(int n); 
+int total = 0;
+int fail = 0;
 
-int main()
+void Init(Chunk* available)
 {
-	seg_tree.resize(Seg_tree_const(arr_size), 0);
-	Construct_tree(0, arr_size - 1, 0);
-	Display(seg_size);
+	available->start = 0;
+	available->size = 100;
+	available->link = NULL;
+	head = available; // head의 start, size, link를 초기화하기 위한 초석
 
-	printf("3부터 5까지의 합 (19 + 2 + 9) : %d\n", Get_query(arr_size, 3, 5));
-	int temp = 10 - arr[3];
-	arr[3] = 10;
-	Segtree_update(0, arr_size - 1, 3, temp, 0);
-	Display(seg_size);
-	system("pause");
+	printf("start = %d \n", available->start);
+	printf("size = %d \n\n", available->size);
 }
-int Seg_tree_const(int n)
+
+int myalloc(Chunk* available, int request_size) // first-fit
 {
-	int height = (int)ceil(log2(n));
-	int t_size = 2 * pow(2, height + 1) - 1;
-	return t_size;
-}
-int Construct_tree(int start, int end, int current) //init
-{
-	if (start == end)
+	total += 1; // 메모리 할당 횟수
+	int temp = 0; // 시작 위치 저장
+	Chunk* before = head; // before 초기화
+	Chunk* current = head; // current 초기화
+
+	while (1)
 	{
-		seg_tree[current] = arr[start];
-		return arr[start];
+		if (current->size >= request_size) // 현재 사이즈가 요청받은 사이즈보다 크거나 같다 == 할당이 가능하다
+		{
+			temp = current->start; // temp에 start지점을 임시로 저장
+			current->start += request_size; // start지점에 요청한 사이즈만큼 더해주기 -> 다음 할당은 더해진 만큼의 start위치에서 시작
+			if (current->size == request_size) // 만약 남은 사이즈가 요청받은 사이즈랑 같으면?
+			{
+				current->size -= request_size; // size는 요청받은 사이즈만큼 감소
+				before = current->link; // before는 다음 chunk를 가르킴
+				current = current->link; // current는 이제 그다음 chunk
+			}
+			else
+			{
+				current->size -= request_size; // size는 요청받은 사이즈만큼 감소
+			}
+			if (head->start == 100) // 만약 첫 청크의 start가 100이면?
+			{
+				head = head->link; // head를 다음 청크와 연결
+			}
+			break;
+		}
+		else // 들어갈 용량이 없음!
+		{
+			before = current; // before는 current를 가르킴
+			current = current->link; // current를 다음 chunk로 이동
+			if (current == NULL) // 만약 다음 chunk가 없으면->실패
+			{
+				fail += 1;
+				return -1;
+				break;
+			}
+		}
 	}
-	int mid = start + (end - start) / 2;
-	int child = 2 * current;
-	seg_tree[current] = Construct_tree(start, mid, child + 1) + Construct_tree(mid + 1, end, child + 2);
-	return seg_tree[current];
+	return temp;
 }
-int Get_query(int n, int q_s, int q_e)
+int myalloc_best(Chunk* available, int request_size)
 {
-	int current = 0;
-	if (q_s < 0 || q_e > n - 1 || q_e < q_s)
-		return -1;
-	int sum = Query_sum(0, n - 1, q_s, q_e, current);
-	return sum;
-}
-int Query_sum(int start, int end, int q_s, int q_e, int current)
-{
-	if (q_s <= start && q_e >= end)
-		return seg_tree[current];
-	if (end < q_s || start > q_e)
-		return 0;
-	int mid = start + (end - start) / 2;
-	int child = 2 * current;
-	return (Query_sum(start, mid, q_s, q_e, child + 1) + Query_sum(mid + 1, end, q_s, q_e, child + 2));
-}
-void Segtree_update(int start, int end, int i, int d_value, int current)
-{
-	if (i < start || i > end)
-		return;
-	seg_tree[current] = seg_tree[current] + d_value;
-	if (start != end)
+	total += 1;
+
+	Chunk* before = head;
+	Chunk* current = head;
+	int temp = 0;
+	int count = 0;
+	int index = 0;
+	int diff = 100;
+
+	while (current != NULL)
 	{
-		int mid = start + (end - start) / 2;
-		int child = 2 * current;
-		Segtree_update(start, mid, i, d_value, child + 1);
-		Segtree_update(mid + 1, end, i, d_value, child + 2);
+		if (((current->size - request_size) < diff) && (current->size >= request_size))
+		{
+			temp = current->start;
+			diff = current->size - request_size;
+			index = count;
+			current = current->link;
+		}
+		else
+		{
+			if (current->link == NULL && before->size < request_size)
+			{
+				fail += 1;
+				return -1;
+				break;
+			}
+			current = current->link;
+		}
+
+		count += 1;
+	}
+
+	before = head;
+	current = head;
+
+	for (int i = 0; i < index; i++)
+	{
+		before = current;
+		current = current->link;
+	}
+
+	if (diff == 0)
+	{
+		before->link = current->link;
+		current = current->link;
+		if (head->size == request_size)
+		{
+			head = head->link;
+		}
+	}
+	else
+	{
+		temp = current->start;
+		current->start += request_size;
+		current->size -= request_size;
+	}
+
+	return temp;
+}
+
+void myfree(Chunk* available, int start_address, int return_size) // 그림 필수일듯
+{
+	Chunk* newchunk = (Chunk*)malloc(sizeof(Chunk)); // 삭제를 함으로서 생기는 chunk를 표현
+	newchunk->start = start_address; // chunk의 start는 기존 데이터의 start랑 같다
+	newchunk->size = return_size; // chunk의 size도 마찬가지
+	Chunk* temp = available; // 두 임시변수엔 첫 번째 청크
+	Chunk* temp2 = temp;
+	Chunk* next = temp->link; // 두 next변수엔 첫 청크의 다음 것
+	Chunk* next2 = next;
+
+	int case_num = 0; 
+	int case_num2 = 0;
+
+	if (next == NULL) // 청크의 다음 것이 없다면?
+	{
+		case_num = 1;
+		case_num2 = 1;
+	}
+
+	switch (case_num)
+	{
+	case 0: // chunk의 next가 있다
+		while (1)
+		{
+			if (next == NULL || (next->start > newchunk->start)) // next의 시작지점 > 삭제할 데이터의 시작지점
+			{
+				newchunk->link = temp->link; // newchunk는 temp(원래의 청크) 다음에 위치
+				temp->link = newchunk; // temp(원래의 청크)를 newchunk와 연결
+				break;
+			}
+			else  // next의 시작지점 < 삭제할 데이터의 시작지점
+			{
+				temp = next; // 원래의 청크는 next가 가리키는걸로 바꾸고
+				next = next->link; // next는 next의 다음것을 지목
+			}
+		}
+		break;
+	case 1: 
+		temp->link = newchunk;
+		newchunk->link = NULL;
+		break;
+	}
+
+	switch (case_num2)
+	{
+	case 0:
+		while (next2 != NULL)
+		{
+			if (temp2->start + temp2->size == next2->start)
+			{
+				temp2->link = next2->link;
+				temp2->size += next2->size;
+				next2 = next2->link;
+			}
+			else
+			{
+				temp2 = next2;
+				next2 = next2->link;
+			}
+		}
+		break;
+	case 1:
+		break;
 	}
 }
-void Display(int n)
+
+void display()
 {
-	printf("세그먼트 트리\n[");
-	for (int i = 0; i < n; i++)
+	Chunk* temp;
+	temp = head;
+	float success = total - fail;
+	if (temp == NULL)
 	{
-		printf("%d ", seg_tree[i]);
+		printf("할당 성공률(공간 부족 없음): %f %% \n", success / total * 100);
+		printf("메모리가 가득 찼습니다!\n\n");
+		return ;
 	}
-	printf("]\n");
+	while (temp->link != NULL)
+	{
+		printf("start: %d size: %d \n", temp->start, temp->size);
+		temp = temp->link;
+	}
+	printf("start: %d size: %d \n", temp->start, temp->size);
+	printf("할당 성공률(공간 부족 없음): %f %% \n\n", success / total * 100);
+}
+
+void main()
+{
+	int i;
+	double start, end;
+	start = (double)clock() / CLOCKS_PER_SEC;
+
+	Chunk available; // 할당및 저장을 할 연결리스트 available
+	Init(&available);
+
+	int a = myalloc_best(&available, 10);
+	printf("a: %d \n", a);
+	display();
+
+	int b = myalloc_best(&available, 20);
+	printf("b: %d \n", b);
+	display();
+
+	int c = myalloc_best(&available, 10);
+	printf("c: %d \n", c);
+	display();
+
+	printf("free a\n");
+	myfree(&available, a, 10);
+	display();
+
+	a = myalloc_best(&available, 30);
+	printf("a: %d \n", a);
+	display();
+
+	printf("free c\n");
+	myfree(&available, c, 10);
+	display();;
+
+	c = myalloc_best(&available, 10);
+	printf("c: %d \n", c);
+	display();
+
+	int d = myalloc_best(&available, 40);
+	printf("d: %d \n", d);
+	display();
+
+	printf("free b\n");
+	myfree(&available, b, 20);
+	display();
+
+	end = (((double)clock()) / CLOCKS_PER_SEC);
+	printf("프로그램 수행 시간 :%lf 초\n", (end - start));
+	system("PAUSE");
 }
