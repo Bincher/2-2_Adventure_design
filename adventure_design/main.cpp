@@ -1,8 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
 #include <time.h>
+#include <random>
+#include <string.h>
+#include <math.h>
+#include <vector>
 using namespace std;
+
 
 // 참고 : https://velog.io/@stellakim1012/%EA%B0%84%EB%8B%A8%ED%95%9C-%EB%A9%94%EB%AA%A8%EB%A6%AC-%EA%B4%80%EB%A6%AC%EC%9E%90
 
@@ -227,42 +230,56 @@ void main()
 
 	Chunk available; // 할당및 저장을 할 연결리스트 available
 	Init(&available);
+	srand(time(NULL));
 
-	int a = myalloc_best(&available, 10);
-	printf("a: %d \n", a);
-	display();
+	int index = 0;
+	vector <int> start_v;
+	vector <int> size_v;
+	vector <char> index_v;
+	for (int i = 0; i < 10; i++)
+	{
+		int size_temp = 0;
+		int start_temp = 0;
+		int choice = rand() % 2;
+		if (start_v.size() == 0)
+			choice = 0;
+		switch (choice)
+		{
+		case 0:
+			size_temp = (rand() % 5) * 10 + 10;
+			printf("할당할 용량 : %d\n", size_temp);
 
-	int b = myalloc_best(&available, 20);
-	printf("b: %d \n", b);
-	display();
+			size_v.push_back(size_temp);
+			start_v.push_back(myalloc(&available, size_temp));
+			index_v.push_back(97 + index);
+			printf("%c: %d \n", 97 + index++, start_v[start_v.size() - 1]);
 
-	int c = myalloc_best(&available, 10);
-	printf("c: %d \n", c);
-	display();
+			if (start_v[start_v.size() - 1] == -1)
+			{
+				size_v.erase(size_v.begin() + size_v.size() - 1);
+				start_v.erase(start_v.begin() + start_v.size() - 1);
+				index_v.erase(index_v.begin() + index_v.size() - 1);
+				index--;
+			}
 
-	printf("free a\n");
-	myfree(&available, a, 10);
-	display();
-
-	a = myalloc_best(&available, 30);
-	printf("a: %d \n", a);
-	display();
-
-	printf("free c\n");
-	myfree(&available, c, 10);
-	display();;
-
-	c = myalloc_best(&available, 10);
-	printf("c: %d \n", c);
-	display();
-
-	int d = myalloc_best(&available, 40);
-	printf("d: %d \n", d);
-	display();
-
-	printf("free b\n");
-	myfree(&available, b, 20);
-	display();
+			
+			display();
+			
+			break;
+		case 1:
+			start_temp = (rand() % start_v.size());
+			printf("free %c\n", index_v.at(start_temp));
+			myfree(&available, start_v.at(start_temp), size_v.at(start_temp));
+			display();
+			start_v.erase(start_v.begin() + start_temp);
+			size_v.erase(size_v.begin() + start_temp);
+			index_v.erase(index_v.begin() + start_temp);
+\
+			break;
+		default:
+			break;
+		}
+	}
 
 	end = (((double)clock()) / CLOCKS_PER_SEC);
 	printf("프로그램 수행 시간 :%lf 초\n", (end - start));
