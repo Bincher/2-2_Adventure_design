@@ -1,7 +1,6 @@
 #include <iostream>
 #include <time.h>
 #include <random>
-#include <string.h>
 #include <math.h>
 #include <vector>
 using namespace std;
@@ -146,7 +145,7 @@ void myfree(Chunk* available, int start_address, int return_size) // 그림 필수일
 	Chunk* next = temp->link; // 두 next변수엔 첫 청크의 다음 것
 	Chunk* next2 = next;
 
-	int case_num = 0; 
+	int case_num = 0;
 	int case_num2 = 0;
 
 	if (next == NULL) // 청크의 다음 것이 없다면?
@@ -173,7 +172,7 @@ void myfree(Chunk* available, int start_address, int return_size) // 그림 필수일
 			}
 		}
 		break;
-	case 1: 
+	case 1:
 		temp->link = newchunk;
 		newchunk->link = NULL;
 		break;
@@ -202,7 +201,7 @@ void myfree(Chunk* available, int start_address, int return_size) // 그림 필수일
 	}
 }
 
-void display()
+int display()
 {
 	Chunk* temp;
 	temp = head;
@@ -211,28 +210,30 @@ void display()
 	{
 		printf("할당 성공률(공간 부족 없음): %f %% \n", success / total * 100);
 		printf("메모리가 가득 찼습니다!\n\n");
-		return ;
+		system("pause");
 	}
-	while (temp->link != NULL)
+	else
 	{
+		while (temp->link != NULL)
+		{
+			printf("start: %d size: %d \n", temp->start, temp->size);
+			temp = temp->link;
+		}
 		printf("start: %d size: %d \n", temp->start, temp->size);
-		temp = temp->link;
+		printf("할당 성공률(공간 부족 없음): %f %% \n\n", success / total * 100);
 	}
-	printf("start: %d size: %d \n", temp->start, temp->size);
-	printf("할당 성공률(공간 부족 없음): %f %% \n\n", success / total * 100);
+	return 0;
 }
 
 void main()
 {
-	int i;
+	srand((unsigned int)time(NULL));
 	double start, end;
 	start = (double)clock() / CLOCKS_PER_SEC;
-
+	int i;
+	int index = 0;
 	Chunk available; // 할당및 저장을 할 연결리스트 available
 	Init(&available);
-	srand(time(NULL));
-
-	int index = 0;
 	vector <int> start_v;
 	vector <int> size_v;
 	vector <char> index_v;
@@ -240,19 +241,24 @@ void main()
 	{
 		int size_temp = 0;
 		int start_temp = 0;
-		int choice = rand() % 2;
-		if (start_v.size() == 0)
+		int choice;
+		choice = rand() % 4;
+		if (start_v.size() < 1)
 			choice = 0;
 		switch (choice)
 		{
 		case 0:
-			size_temp = (rand() % 5) * 10 + 10;
+		case 1:
+		case 2:
+			size_temp = (rand() % 99) + 1;
 			printf("할당할 용량 : %d\n", size_temp);
 
 			size_v.push_back(size_temp);
 			start_v.push_back(myalloc(&available, size_temp));
+			//start_v.push_back(myalloc_best(&available, size_temp));
 			index_v.push_back(97 + index);
 			printf("%c: %d \n", 97 + index++, start_v[start_v.size() - 1]);
+			printf("%d\n", i);
 
 			if (start_v[start_v.size() - 1] == -1)
 			{
@@ -261,20 +267,18 @@ void main()
 				index_v.erase(index_v.begin() + index_v.size() - 1);
 				index--;
 			}
-
-			
 			display();
-			
+
 			break;
-		case 1:
+		case 3:
 			start_temp = (rand() % start_v.size());
-			printf("free %c\n", index_v.at(start_temp));
+			printf("free %c (기존 start = %d, 기존 size = %d)\n", index_v.at(start_temp), start_v.at(start_temp), size_v.at(start_temp));
 			myfree(&available, start_v.at(start_temp), size_v.at(start_temp));
 			display();
 			start_v.erase(start_v.begin() + start_temp);
 			size_v.erase(size_v.begin() + start_temp);
 			index_v.erase(index_v.begin() + start_temp);
-\
+
 			break;
 		default:
 			break;
